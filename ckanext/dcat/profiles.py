@@ -59,6 +59,7 @@ PREFIX_MAILTO = u'mailto:'
 DISTRIBUTION_LICENSE_FALLBACK_CONFIG = 'ckanext.dcat.resource.inherit.license'
 
 
+
 class URIRefOrLiteral(object):
     '''Helper which creates an URIRef if the value appears to be an http URL,
     or a Literal otherwise. URIRefs are also cleaned using CleanedURIRef.
@@ -1212,7 +1213,7 @@ class EuropeanDCATAPProfile(RDFProfile):
             ('title', DCT.title, None, Literal),
             ('notes', DCT.description, None, Literal),
             ('url', DCAT.landingPage, None, URIRef),
-            ('identifier', DCT.identifier, ['guid', 'id'], URIRefOrLiteral),
+            ('identifier', DCT.changed, ['guid', 'id'], URIRefOrLiteral),
             ('version', OWL.versionInfo, ['dcat_version'], Literal),
             ('version_notes', ADMS.versionNotes, None, Literal),
             ('frequency', DCT.accrualPeriodicity, None, URIRefOrLiteral),

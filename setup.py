@@ -44,6 +44,7 @@ setup(
     euro_dcat_ap=ckanext.dcat.profiles:EuropeanDCATAPProfile
     euro_dcat_ap_2=ckanext.dcat.profiles:EuropeanDCATAP2Profile
     schemaorg=ckanext.dcat.profiles:SchemaOrgProfile
+    mobility_dcat_ap=ckanext.dcat.mobilityProfile:MobilityDCATAPProfile
 
     [paste.paster_command]
     generate_static = ckanext.dcat.commands:GenerateStaticDCATCommand
