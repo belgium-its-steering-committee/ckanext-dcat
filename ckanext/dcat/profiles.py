@@ -3,6 +3,7 @@ from past.builtins import basestring
 from builtins import object
 import datetime
 import json
+from pprint import pprint
 
 import six
 from six.moves.urllib.parse import quote
@@ -35,6 +36,7 @@ LOCN = Namespace('http://www.w3.org/ns/locn#')
 GSP = Namespace('http://www.opengis.net/ont/geosparql#')
 OWL = Namespace('http://www.w3.org/2002/07/owl#')
 SPDX = Namespace('http://spdx.org/rdf/terms#')
+MOBILITYDCATAP = Namespace("https://w3id.org/mobilitydcat-ap")
 
 GEOJSON_IMT = 'https://www.iana.org/assignments/media-types/application/vnd.geo+json'
 
@@ -47,11 +49,11 @@ namespaces = {
     'foaf': FOAF,
     'schema': SCHEMA,
     'time': TIME,
-    'skos': SKOS,
     'locn': LOCN,
     'gsp': GSP,
     'owl': OWL,
     'spdx': SPDX,
+    'mobilitydcatap': MOBILITYDCATAP,
 }
 
 PREFIX_MAILTO = u'mailto:'
@@ -260,6 +262,7 @@ class RDFProfile(object):
 
         If no values found, returns an empty string
         '''
+        print("Object from list:: ", subject, predicate )
         return [str(o) for o in self.g.objects(subject, predicate)]
 
     def _get_vcard_property_value(self, subject, predicate, predicate_string_property=None):
@@ -1617,6 +1620,52 @@ class EuropeanDCATAP2Profile(EuropeanDCATAPProfile):
         # call super method
         super(EuropeanDCATAP2Profile, self).graph_from_catalog(catalog_dict, catalog_ref)
 
+class MobilityDCATAPProfile(EuropeanDCATAP2Profile):
+    '''
+    A RDF mobility extension for the DCAT application profile for data portals in Europe
+    It requires the European DCAP-AP Profile V2.0.1 ('euro_dcat_ap_v2.0.1')
+    '''
+
+    def parse_dataset(self, dataset_dict, dataset_ref):
+        
+        super(MobilityDCATAPProfile, self).parse_dataset(dataset_dict, dataset_ref)
+        
+        #Lists
+        for key , predicate in (
+                ('network_coverage', MOBILITYDCATAP.networkCoverage)
+        ):
+            value = self._object_value_list(dataset_ref, predicate)
+            print("Key: ${key}, Predicate: ${predicate}, Value: ${value}")
+            if value:
+                dataset_dict[key] = value
+        
+        return dataset_dict
+    
+    def graph_from_dataset(self, dataset_dict, dataset_ref):
+        print("GRAPH dataset_dict:: ")
+        pprint(dataset_dict)
+        print("GRAPH dataset_ref:: ")
+        pprint(dataset_ref)
+        
+        g = self.g
+
+        for preflix, namespace in namespaces.items():
+            g.bind(preflix, namespace)
+        
+        #creeert hoofdclass
+        #g.add((dataset_ref, RDF.type,MOBILITYDCATAP.location))
+        
+        #hoofdclass fields for mobilityDCATAT
+
+        items =[
+            ('network_coverage', MOBILITYDCATAP.networkCoverage, None, URIRefOrLiteral)
+        ]
+
+        self._add_triples_from_dict(dataset_dict, dataset_ref, items)
+
+        
+        super(MobilityDCATAPProfile, self).graph_from_dataset(dataset_dict, dataset_ref)
+        return
 
 class SchemaOrgProfile(RDFProfile):
     '''
@@ -1909,3 +1958,4 @@ class SchemaOrgProfile(RDFProfile):
     def _distribution_numbers_graph(self, distribution, resource_dict):
         if resource_dict.get('size'):
             self.g.add((distribution, SCHEMA.contentSize, Literal(resource_dict['size'])))
+
