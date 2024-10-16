@@ -1625,27 +1625,59 @@ class MobilityDCATAPProfile(EuropeanDCATAP2Profile):
     A RDF mobility extension for the DCAT application profile for data portals in Europe
     It requires the European DCAP-AP Profile V2.0.1 ('euro_dcat_ap_v2.0.1')
     '''
+    
+    def _add_list_triple_with_lang_tag(self, subject, predicate, tuples_list, _type=Literal):
+        '''
+        Adds as many triples to the graph as values
+
+        Values are literal strings, if `value` is a list, one for each
+        item. If `value` is a string there is an attempt to split it using
+        commas, to support legacy fields.
+
+        A 'lang' paramater is used to add language tags to the literal objects.
+        '''
+        
+        for lang, item in tuples_list:
+            #if _type is not a 'Literal' the object should not get the lang parameter
+            if _type == URIRef:
+                object = CleanedURIRef(item)
+            else:
+                #is _type is a 'Literal' it should optional get the language tag
+                if lang:
+                    object = Literal(item, lang=lang)
+                else:
+                    object = Literal(item)
+            self.g.add((subject, predicate, object))
+            
 
     def parse_dataset(self, dataset_dict, dataset_ref):
-        
         super(MobilityDCATAPProfile, self).parse_dataset(dataset_dict, dataset_ref)
         
-        #Lists
-        for key , predicate in (
-                ('network_coverage', MOBILITYDCATAP.networkCoverage)
+        """
+        # NOTE wait until field_names are in par with ocabularies
+        # NOTE wat met update?
+        for key, predicate in (
+            ('network_coverage', MOBILITYDCATAP.networkCoverage),
+            ('theme', DCAT.theme),
         ):
-            value = self._object_value_list(dataset_ref, predicate)
-            print("Key: ${key}, Predicate: ${predicate}, Value: ${value}")
-            if value:
-                dataset_dict[key] = value
-        
+            values = self._object_value_list(dataset_ref, predicate)
+            if values:
+                dataset_dict['extras'].append({'key': key,
+                                               'value': json.dumps(values)})
+                    
+        """
+
         return dataset_dict
     
     def graph_from_dataset(self, dataset_dict, dataset_ref):
-        print("GRAPH dataset_dict:: ")
-        pprint(dataset_dict)
-        print("GRAPH dataset_ref:: ")
-        pprint(dataset_ref)
+        
+        super(MobilityDCATAPProfile, self).graph_from_dataset(dataset_dict, dataset_ref)
+        #print("")
+        #print("GRAPH dataset_dict:: ")
+        #print("")
+        #pprint(dataset_dict)
+        #print("GRAPH dataset_ref:: ")
+        #pprint(dataset_ref)
         
         g = self.g
 
@@ -1657,14 +1689,34 @@ class MobilityDCATAPProfile(EuropeanDCATAP2Profile):
         
         #hoofdclass fields for mobilityDCATAT
 
+        """
+        Change field names:
+            notes_translated => description_translated
+            dataset_type => mobilityTheme
+        """
+        #print("dataset_dict:: ", dataset_dict)
+        
+        #normal
         items =[
             ('network_coverage', MOBILITYDCATAP.networkCoverage, None, URIRefOrLiteral)
         ]
-
         self._add_triples_from_dict(dataset_dict, dataset_ref, items)
 
+        #its_dataset_type
+        input = dataset_dict['its_dataset_type'][0]
+        items_list = input.strip('u').strip('{}').split(',')
+        items_list=[item.strip('"') for item in items_list]
+        self._add_list_triple(dataset_ref,MOBILITYDCATAP.theme, items_list,URIRefOrLiteral)
         
-        super(MobilityDCATAPProfile, self).graph_from_dataset(dataset_dict, dataset_ref)
+        #notes_translated
+        items_langs_list = dataset_dict['notes_translated']
+        items_list=list(items_langs_list.values())
+        lang_list =list(items_langs_list.keys())
+        #make tuples for processing
+        tuples_list = zip(lang_list, items_list)
+        
+        self._add_list_triple_with_lang_tag(dataset_ref, MOBILITYDCATAP.description, tuples_list, URIRefOrLiteral)
+
         return
 
 class SchemaOrgProfile(RDFProfile):
