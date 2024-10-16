@@ -1684,21 +1684,42 @@ class MobilityDCATAPProfile(EuropeanDCATAP2Profile):
         for preflix, namespace in namespaces.items():
             g.bind(preflix, namespace)
         
-        #creeert hoofdclass
-        #g.add((dataset_ref, RDF.type,MOBILITYDCATAP.location))
-        
-        #hoofdclass fields for mobilityDCATAT
-
         """
         Change field names:
             notes_translated => description_translated
             dataset_type => mobilityTheme
         """
-        #print("dataset_dict:: ", dataset_dict)
+            
+        #publisher
+        publisher_uri = self._get_dataset_value(dataset_dict,'publisher_uri' )
+        if publisher_uri:
+            publisher_details = CleanedURIRef(publisher_uri)
+        else:
+            publisher_details = BNode()
+        
+        location_extend = BNode()
+        g.add((location_extend, RDF.type, LOCN.postName))
+        g.add((publisher_details, RDF.type, FOAF.Agent))
+
+        g.add((publisher_details, LOCN.Address, location_extend))
+        g.add((dataset_ref, DCT.publisher, publisher_details))
+        
+        items =[
+        ('contact_name', FOAF.name, None, Literal),
+        ('publisher_firstName',FOAF.firstName,None, Literal),
+        ('publisher_surname', FOAF.surname,None, Literal),
+        ('publisher_email', FOAF.mbox,None, Literal),
+        ('p_tel', LOCN.phone,None, Literal),
+        ('publisher_url', FOAF.workplaceHomepage,None, URIRef),
+        ('publisher_type', DCT.type,None, URIRefOrLiteral),
+        ('p_address', LOCN.Address, None, Literal),
+        ]
+        self._add_triples_from_dict(dataset_dict, publisher_details, items)
         
         #normal
         items =[
-            ('network_coverage', MOBILITYDCATAP.networkCoverage, None, URIRefOrLiteral)
+            ('network_coverage', MOBILITYDCATAP.networkCoverage, None, URIRefOrLiteral),
+            
         ]
         self._add_triples_from_dict(dataset_dict, dataset_ref, items)
 
@@ -1717,6 +1738,7 @@ class MobilityDCATAPProfile(EuropeanDCATAP2Profile):
         
         self._add_list_triple_with_lang_tag(dataset_ref, MOBILITYDCATAP.description, tuples_list, URIRefOrLiteral)
 
+        super(MobilityDCATAPProfile, self).graph_from_dataset(dataset_dict, dataset_ref)
         return
 
 class SchemaOrgProfile(RDFProfile):
